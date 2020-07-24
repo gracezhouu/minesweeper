@@ -10,15 +10,48 @@ import './index.css';
     );
   }
   
+  const SAFE_CELL = 0
+  const MINE_CELL = 9
+
   class Board extends React.Component {
     constructor(props) {
       super(props);
-      this.state = {
-        squares: Array(props.rows * props.columns).fill(null),
+      this.state = {//
         rows: props.rows,
         columns: props.columns,
+        squares: this.initData(props.rows, props.columns),
         xIsNext: true,
       };
+    }
+
+    mineShuffle (array, mine = array.length) {
+      let count = mine
+      let index
+      while (count) {
+        index = Math.floor(Math.random() * count--)
+        ;[array[count], array[index]] = [array[index], array[count]]
+      }
+      return array
+    }
+
+    initData(rows, cols) {
+      const mines = 10
+      const safeCellNum = rows * cols - mines
+      const safeArea = (new Array(safeCellNum).fill(SAFE_CELL))
+      const mineArea = (new Array(mines).fill(MINE_CELL))
+      let totalArea = safeArea.concat(mineArea)
+      totalArea = this.mineShuffle(totalArea)
+
+      this.dataList = totalArea.reduce((memo, curr, index) => {
+        if (index % cols === 0) {
+          memo.push([curr])
+        } else {
+          memo[memo.length - 1].push(curr)
+        }
+        return memo
+      }, [])
+
+      return totalArea
     }
 
     handleClick(i) {
