@@ -14,7 +14,9 @@ import './index.css';
     constructor(props) {
       super(props);
       this.state = {
-        squares: Array(9).fill(null),
+        squares: Array(props.rows * props.columns).fill(null),
+        rows: props.rows,
+        columns: props.columns,
         xIsNext: true,
       };
     }
@@ -39,6 +41,22 @@ import './index.css';
         />
       );
     }
+
+    createTable = () => {
+      let table = []
+  
+      // Outer loop to create parent
+      for (let i = 0; i < this.state.rows; i++) {
+        let children = []
+        //Inner loop to create children
+        for (let j = 0; j < this.state.columns; j++) {
+          children.push(this.renderSquare(i*this.state.columns+j))
+        }
+        //Create the parent and add the children
+        table.push(<div className="board-row">{children}</div>)
+      }
+      return table
+    }
   
     render() {
       const winner = calculateWinner(this.state.squares);
@@ -48,25 +66,11 @@ import './index.css';
       } else {
         status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
       }
-  
+
       return (
         <div>
           <div className="status">{status}</div>
-          <div className="board-row">
-            {this.renderSquare(0)}
-            {this.renderSquare(1)}
-            {this.renderSquare(2)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(3)}
-            {this.renderSquare(4)}
-            {this.renderSquare(5)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(6)}
-            {this.renderSquare(7)}
-            {this.renderSquare(8)}
-          </div>
+          {this.createTable()}
         </div>
       );
     }
@@ -77,7 +81,7 @@ import './index.css';
       return (
         <div className="game">
           <div className="game-board">
-            <Board />
+            <Board rows="10" columns="10"/>
           </div>
           <div className="game-info">
             <div>{/* status */}</div>
