@@ -2,16 +2,39 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-  function Square(props) {
-    return (
-      <button className="square" onClick={props.onClick}>
-        {props.value}
-      </button>
-    );
+  class Square extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {//
+        cell: props.cell
+      };
+    }
+
+    render() {
+      return (
+        <button className={`square ${this.state.cell.className}`} onClick={() => this.props.onClick()}>
+          {this.state.cell.value}
+        </button>
+      );
+    }
   }
   
   const SAFE_CELL = 0
   const MINE_CELL = 9
+  const FRONT = 0
+  const BACK = 1
+  const FLAG = 2
+  const NOT_SURE = 3
+  const AROUND = [
+    [-1,-1],
+    [-1,0],
+    [-1,1],
+    [0,-1],
+    [0,1],
+    [1,-1],
+    [1,0],
+    [1,1]
+  ]
 
   class Board extends React.Component {
     constructor(props) {
@@ -19,8 +42,9 @@ import './index.css';
       this.state = {//
         rows: props.rows,
         columns: props.columns,
-        squares: this.initData(props.rows, props.columns),
+        //squares: this.initData(props.rows, props.columns),
         xIsNext: true,
+        dataList:this.initData(props.rows, props.columns),
       };
     }
 
@@ -28,8 +52,8 @@ import './index.css';
       let count = mine
       let index
       while (count) {
-        index = Math.floor(Math.random() * count--)
-        ;[array[count], array[index]] = [array[index], array[count]]
+        index = Math.floor(Math.random() * count--);
+        [array[count], array[index]] = [array[index], array[count]]
       }
       return array
     }
@@ -42,35 +66,54 @@ import './index.css';
       let totalArea = safeArea.concat(mineArea)
       totalArea = this.mineShuffle(totalArea)
 
-      this.dataList = totalArea.reduce((memo, curr, index) => {
+      let dataList = totalArea.reduce((memo, curr, index) => {
         if (index % cols === 0) {
-          memo.push([curr])
+          memo.push([{value: curr}])
         } else {
-          memo[memo.length - 1].push(curr)
+          memo[memo.length - 1].push({value:curr})
         }
         return memo
       }, [])
-
-      return totalArea
+      this.setEnvNum(dataList)  
+      //return totalArea
+      return dataList
     }
 
-    handleClick(i) {
-      const squares = this.state.squares.slice();
-      if (calculateWinner(squares) || squares[i]) {
-        return;
-      }
-      squares[i] = this.state.xIsNext ? 'X' : 'O';
-      this.setState({
-        squares: squares,
-        xIsNext: !this.state.xIsNext,
+    setEnvNum(dataList) {
+      dataList.forEach((row, rowIndex) => {
+        row.forEach((cell, colIndex) => {
+          cell.status = BACK
+          cell.rowIndex = rowIndex
+          cell.colIndex = colIndex
+          cell.className = ''
+          if (cell.value === MINE_CELL) {
+            AROUND.forEach(offset => {
+              const row = rowIndex +offset[0]
+              const col = colIndex + offset[1]
+              if(
+                dataList[row]&&
+                dataList[row][col] &&
+                dataList[row][col].value !==undefined &&
+                dataList[row][col].value !==MINE_CELL
+              ) dataList[row][col].value ++
+            })
+          }
+        }) 
       });
     }
 
-    renderSquare(i) {
+    handleClick(i, j) {
+      let dataList = this.state.dataList;
+      if (dataList[i][j].status === FLAG) return
+      dataList[i][j].status = FRONT
+      dataList[i][j].className = 'front'
+    }
+
+    renderSquare(i,j) {
       return (
         <Square 
-          value={this.state.squares[i]}
-          onClick={() => this.handleClick(i)} 
+          cell={this.state.dataList[i][j]}
+          onClick={() => this.handleClick(i, j)} 
         />
       );
     }
@@ -83,7 +126,7 @@ import './index.css';
         let children = []
         //Inner loop to create children
         for (let j = 0; j < this.state.columns; j++) {
-          children.push(this.renderSquare(i*this.state.columns+j))
+          children.push(this.renderSquare(i,j))
         }
         //Create the parent and add the children
         table.push(<div className="board-row">{children}</div>)
@@ -134,21 +177,21 @@ import './index.css';
   
 
   function calculateWinner(squares) {
-    const lines = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6],
-    ];
-    for (let i = 0; i < lines.length; i++) {
-      const [a, b, c] = lines[i];
-      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-        return squares[a];
-      }
-    }
+    // const lines = [
+    //   [0, 1, 2],
+    //   [3, 4, 5],
+    //   [6, 7, 8],
+    //   [0, 3, 6],
+    //   [1, 4, 7],
+    //   [2, 5, 8],
+    //   [0, 4, 8],
+    //   [2, 4, 6],
+    // ];
+    // for (let i = 0; i < lines.length; i++) {
+    //   const [a, b, c] = lines[i];
+    //   if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+    //     return squares[a];
+    //   }
+    // }
     return null;
   }
