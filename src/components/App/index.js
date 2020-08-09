@@ -5,6 +5,7 @@ import "./App.css";
 import NumberDisplay from "../NumberDisplay";
 import {generateCells} from "../utils/generateCells"
 import {openMultipleCells} from "../utils/generateCells"
+import {setCellProp} from "../utils/setCellProp"
 import Button from "../Button";
 import {MAX_COLS, MAX_ROWS} from "../../constants";
 
@@ -114,64 +115,62 @@ const App = () => {
             return;
         }
 
-        let newCells = cells;
-        let cell = newCells[rowParam][colParam];
+        let gameCells = cells;
+        let cell = gameCells[rowParam][colParam];
         //console.log(cells)
         if(!isLive){
             //TODO: make sure you don't click a bomb in the first click
-            let isABomb=(cell.value ===-1)
-
-            while(isABomb){
-                newCells = generateCells()
-                if(cell.value!==-1){
-                    isABomb =false
+            if (cell.value === -1) {
+                let hasABomb = true;
+                let newCells = gameCells;
+                while (hasABomb) {
+                    newCells = generateCells();
+                    const newCell = newCells[rowParam][colParam];
+                    if (newCell.value !== -1) {    //why need to check -1
+                        hasABomb = false;
+                    }
                 }
+                gameCells = newCells;
+                cell = gameCells[rowParam][colParam];
             }
             setIsLive(true)
         }
 
-        const currentCell = newCells[rowParam][colParam]
+        const currentCell = gameCells[rowParam][colParam]
         if(currentCell.state !== 0){
             return
         }
         if(currentCell.value === -1){
             //TODO: what happen bomb click
             setHasLost(true)
-            newCells[rowParam][colParam].red = true
+            let newCells = setCellProp(gameCells, rowParam, colParam, "red", true);
             newCells = showAllBombs(newCells)
             setCells(newCells)
+            return
         } else if(currentCell.value === 0){
             //TODO
-            newCells = openMultipleCells(newCells, rowParam, colParam)
-            setCells(newCells)
-        }else{
-            newCells[rowParam][colParam].state = 1
-            setCells(newCells)
+            gameCells = openMultipleCells(gameCells, rowParam, colParam)
+        }else if (currentCell.value > 0){
+            gameCells = setCellProp(gameCells, rowParam, colParam, "state", 1);
         }
         //TODO check to see if hasWon
-        let safeCellsExists = false
-        for (let row=0; row<MAX_ROWS; row++){
-            for(let col = 0; col <MAX_COLS;col++){
-                const currentCell = newCells[row][col]
-                if(currentCell.value!==-1 && currentCell.state===0){
-                    safeCellsExists = true
-                }
-            }
+        const availableNonBombSpaces = gameCells.reduce(
+            (acc, row) =>
+                acc +
+                row.reduce(
+                    (acc2, cell) =>
+                        cell.value !== -1 && cell.state === 0 ? acc2 + 1 : acc2,
+                    0
+                ),
+            0
+        );
+
+        setCells(gameCells);
+
+        if (availableNonBombSpaces === 0) {
+            gameCells.map(row => row.map(cell => ({ ...cell, state: 1 })));
+            setHasWon(true);
         }
-        // if there is no safecell, flag all the left one
-        if(!safeCellsExists){
-            newCells = newCells.map(row => row.map(cell => {
-                if(cell.value === -1){
-                    return {
-                        ...cell,
-                        state: 2
-                    }
-                }
-                return cell
-            }))
-            setHasWon(true)
-        }
-        setCells(newCells)
     }
     //right click
     const handleButtonContextClick = (rowParam:number, colParam:number) => e=> {
