@@ -168,7 +168,7 @@ const App = () => {
         setCells(gameCells);
 
         if (availableNonBombSpaces === 0) {
-            gameCells.map(row => row.map(cell => ({ ...cell, state: 1 })));
+            gameCells.map(row => row.map(cell => ({ ...cell, state: 2 })));
             setHasWon(true);
         }
     }
